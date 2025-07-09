@@ -118,10 +118,16 @@ function ShoppingCheckout() {
             </div>
           </div>
           <div className="w-full mt-4">
+            {/* <Button onClick={handleInitiatePaypalPayment} className="w-full">
+              {isPaymentStart
+                ? "Processing Paypal Payment..."
+                : "Checkout with Khalti"}
+            </Button> */}
             <Button onClick={handleInitiatePaypalPayment} className="w-full">
               {isPaymentStart
                 ? "Processing Paypal Payment..."
                 : "Checkout with Khalti"}
+                
             </Button>
           </div>
         </div>
