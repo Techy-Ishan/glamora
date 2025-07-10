@@ -114,7 +114,7 @@ function ShoppingCheckout() {
           <div className="mt-8 space-y-4">
             <div className="flex justify-between">
               <span className="font-bold">Total</span>
-              <span className="font-bold">${totalCartAmount}</span>
+              <span className="font-bold">Rs. {totalCartAmount}</span>
             </div>
           </div>
           <div className="w-full mt-4">
@@ -123,11 +123,14 @@ function ShoppingCheckout() {
                 ? "Processing Paypal Payment..."
                 : "Checkout with Khalti"}
             </Button> */}
-            <Button onClick={handleInitiatePaypalPayment} className="w-full">
+            <Button
+              onClick={handleInitiatePaypalPayment}
+              className="w-full"
+              disabled={totalCartAmount === 0}
+            >
               {isPaymentStart
                 ? "Processing Paypal Payment..."
                 : "Checkout with Khalti"}
-                
             </Button>
           </div>
         </div>

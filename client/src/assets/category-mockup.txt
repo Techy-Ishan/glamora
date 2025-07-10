@@ -1,0 +1,26 @@
+This is a placeholder file to help you organize your category and brand images.
+
+Recommended steps:
+1. Add SVG or PNG images for each category and brand in this folder.
+   Example filenames:
+   - makeup.svg
+   - skincare.svg
+   - haircare.svg
+   - bathbody.svg
+   - fragrance.svg
+   - accessories.svg
+   - maybelline.svg
+   - loreal.svg
+   - theordinary.svg
+   - cetaphil.svg
+   - cerave.svg
+   - neutrogena.svg
+   - tresemme.svg
+   - pantene.svg
+   - dove.svg
+   - nivea.svg
+   - hugoboss.svg
+   - zara.svg
+   - dyson.svg
+
+2. Once images are added, update the imports and arrays in home.jsx as shown in the next step.
