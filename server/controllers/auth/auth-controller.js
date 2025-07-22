@@ -4,20 +4,22 @@ const User = require("../../models/User");
 
 //register
 const registerUser = async (req, res) => {
-  const { userName, email, password } = req.body;
+  const { userName, email, phone, password } = req.body;
 
   try {
-    const checkUser = await User.findOne({ email });
+    const checkUser = await User.findOne({ $or: [{ email }, { phone }] });
     if (checkUser)
       return res.json({
         success: false,
-        message: "User Already exists with the same email! Please try again",
+        message:
+          "User already exists with the same email or phone! Please try again",
       });
 
     const hashPassword = await bcrypt.hash(password, 12);
     const newUser = new User({
       userName,
       email,
+      phone,
       password: hashPassword,
     });
 
@@ -46,6 +48,13 @@ const loginUser = async (req, res) => {
         success: false,
         message: "User doesn't exists! Please register first",
       });
+
+    console.log(
+      "User found for login:",
+      checkUser.userName,
+      "Role:",
+      checkUser.role
+    );
 
     const checkPasswordMatch = await bcrypt.compare(
       password,
@@ -99,6 +108,9 @@ const logoutUser = (req, res) => {
 //auth middleware
 const authMiddleware = async (req, res, next) => {
   const token = req.cookies.token;
+  console.log("=== AUTH MIDDLEWARE ===");
+  console.log("Token from cookies:", token ? "Present" : "Missing");
+
   if (!token)
     return res.status(401).json({
       success: false,
@@ -107,9 +119,15 @@ const authMiddleware = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, "CLIENT_SECRET_KEY");
+    console.log("Decoded user:", {
+      id: decoded.id,
+      role: decoded.role,
+      email: decoded.email,
+    });
     req.user = decoded;
     next();
   } catch (error) {
+    console.log("Token verification failed:", error.message);
     res.status(401).json({
       success: false,
       message: "Unauthorised user!",

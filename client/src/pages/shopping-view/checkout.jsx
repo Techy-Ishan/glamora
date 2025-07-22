@@ -32,7 +32,7 @@ function ShoppingCheckout() {
         )
       : 0;
 
-  function handleInitiatePaypalPayment() {
+  function handleInitiateKhaltiPayment() {
     if (cartItems.length === 0) {
       toast({
         title: "Your cart is empty. Please add items to proceed",
@@ -72,17 +72,15 @@ function ShoppingCheckout() {
         notes: currentSelectedAddress?.notes,
       },
       orderStatus: "pending",
-      paymentMethod: "paypal",
+      paymentMethod: "khalti",
       paymentStatus: "pending",
       totalAmount: totalCartAmount,
       orderDate: new Date(),
       orderUpdateDate: new Date(),
-      paymentId: "",
-      payerId: "",
     };
 
     dispatch(createNewOrder(orderData)).then((data) => {
-      console.log(data, "sangam");
+      console.log(data, "khalti order creation");
       if (data?.payload?.success) {
         setIsPaymemntStart(true);
       } else {
@@ -107,8 +105,8 @@ function ShoppingCheckout() {
         />
         <div className="flex flex-col gap-4">
           {cartItems && cartItems.items && cartItems.items.length > 0
-            ? cartItems.items.map((item) => (
-                <UserCartItemsContent cartItem={item} />
+            ? cartItems.items.map((item, index) => (
+                <UserCartItemsContent key={index} cartItem={item} />
               ))
             : null}
           <div className="mt-8 space-y-4">
@@ -124,12 +122,12 @@ function ShoppingCheckout() {
                 : "Checkout with Khalti"}
             </Button> */}
             <Button
-              onClick={handleInitiatePaypalPayment}
+              onClick={handleInitiateKhaltiPayment}
               className="w-full"
               disabled={totalCartAmount === 0}
             >
               {isPaymentStart
-                ? "Processing Paypal Payment..."
+                ? "Processing Khalti Payment..."
                 : "Checkout with Khalti"}
             </Button>
           </div>

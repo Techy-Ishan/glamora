@@ -9,6 +9,7 @@ import { Link, useNavigate } from "react-router-dom";
 const initialState = {
   userName: "",
   email: "",
+  phone: "",
   password: "",
 };
 

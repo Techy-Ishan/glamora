@@ -32,6 +32,13 @@ function MenuItems() {
 
   function handleNavigate(getCurrentMenuItem) {
     sessionStorage.removeItem("filters");
+
+    // Special handling for parlors - always navigate directly
+    if (getCurrentMenuItem.id === "parlors") {
+      navigate(getCurrentMenuItem.path);
+      return;
+    }
+
     const currentFilter =
       getCurrentMenuItem.id !== "home" &&
       getCurrentMenuItem.id !== "products" &&
@@ -168,5 +175,3 @@ function ShoppingHeader() {
 }
 
 export default ShoppingHeader;
-
-

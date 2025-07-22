@@ -26,6 +26,10 @@ const OrderSchema = new mongoose.Schema({
   totalAmount: Number,
   orderDate: Date,
   orderUpdateDate: Date,
+  // Khalti specific fields
+  khaltiPidx: String,
+  khaltiTransactionId: String,
+  // Legacy PayPal fields (keep for backward compatibility)
   paymentId: String,
   payerId: String,
 });

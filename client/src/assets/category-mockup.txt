@@ -1,4 +1,4 @@
-This is a placeholder file to help you organize your category and brand images.
+is is a placeholder file to help you organize your category and brand images.
 
 Recommended steps:
 1. Add SVG or PNG images for each category and brand in this folder.

@@ -19,8 +19,25 @@ function CommonForm({
   buttonText,
   isBtnDisabled,
 }) {
+  // Helper function to get nested value
+  const getNestedValue = (obj, path) => {
+    return path.split(".").reduce((current, key) => current?.[key], obj);
+  };
+
+  // Helper function to set nested value
+  const setNestedValue = (obj, path, value) => {
+    const keys = path.split(".");
+    const lastKey = keys.pop();
+    const target = keys.reduce((current, key) => {
+      if (!current[key]) current[key] = {};
+      return current[key];
+    }, obj);
+    target[lastKey] = value;
+  };
+
   const renderInputsByComponentType = (control) => {
-    const value = formData[control.name] || "";
+    const value = getNestedValue(formData, control.name) || "";
+
     if (control.componentType === "input") {
       return (
         <Input
@@ -29,18 +46,22 @@ function CommonForm({
           id={control.name}
           type={control.type}
           value={value}
-          onChange={(e) =>
-            setFormData({ ...formData, [control.name]: e.target.value })
-          }
+          onChange={(e) => {
+            const newFormData = { ...formData };
+            setNestedValue(newFormData, control.name, e.target.value);
+            setFormData(newFormData);
+          }}
         />
       );
     }
     if (control.componentType === "select") {
       return (
         <Select
-          onValueChange={(val) =>
-            setFormData({ ...formData, [control.name]: val })
-          }
+          onValueChange={(val) => {
+            const newFormData = { ...formData };
+            setNestedValue(newFormData, control.name, val);
+            setFormData(newFormData);
+          }}
           value={value}
         >
           <SelectTrigger className="w-full">
@@ -62,11 +83,13 @@ function CommonForm({
         <Textarea
           name={control.name}
           placeholder={control.placeholder}
-          id={control.id}
+          id={control.name}
           value={value}
-          onChange={(e) =>
-            setFormData({ ...formData, [control.name]: e.target.value })
-          }
+          onChange={(e) => {
+            const newFormData = { ...formData };
+            setNestedValue(newFormData, control.name, e.target.value);
+            setFormData(newFormData);
+          }}
         />
       );
     }
@@ -78,9 +101,14 @@ function CommonForm({
         id={control.name}
         type={control.type}
         value={value}
-        onChange={(e) =>
-          setFormData({ ...formData, [control.name]: e.target.value })
-        }
+        onChange={(e) => {
+          const newFormData = setNestedValue(
+            formData,
+            control.name,
+            e.target.value
+          );
+          setFormData(newFormData);
+        }}
       />
     );
   };
@@ -92,15 +120,17 @@ function CommonForm({
   function validate() {
     const newErrors = {};
     formControls.forEach((control) => {
-      const value = formData[control.name] || "";
+      const value = getNestedValue(formData, control.name) || "";
       // Make salePrice truly optional
       if (
         control.componentType === "input" ||
         control.componentType === "textarea"
       ) {
-        if (control.name !== "salePrice" && !value.trim()) {
+        // Optional fields that don't require validation
+        const optionalFields = ["salePrice", "contact.website"];
+        if (!optionalFields.includes(control.name) && !value.trim()) {
           newErrors[control.name] = `${control.label} is required`;
-        } else if (control.type === "email") {
+        } else if (control.type === "email" && value.trim()) {
           // Simple email regex
           const emailRegex = /^[^\s@]+@[^^\s@]+\.[^\s@]+$/;
           if (!emailRegex.test(value)) {
@@ -132,8 +162,15 @@ function CommonForm({
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (validate()) {
+    console.log("Form validation starting...");
+    const isValid = validate();
+    console.log("Form validation result:", isValid);
+    console.log("Form data:", formData);
+    if (isValid) {
+      console.log("Calling onSubmit...");
       onSubmit(e);
+    } else {
+      console.log("Form validation failed, errors:", errors);
     }
   }
 

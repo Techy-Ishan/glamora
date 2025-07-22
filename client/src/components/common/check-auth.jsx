@@ -1,20 +1,22 @@
 import { Navigate, useLocation } from "react-router-dom";
+import PropTypes from "prop-types";
 
 function CheckAuth({ isAuthenticated, user, children }) {
   const location = useLocation();
 
-  console.log(location.pathname, isAuthenticated);
+  console.log(
+    "CheckAuth - location:",
+    location.pathname,
+    "isAuthenticated:",
+    isAuthenticated,
+    "user:",
+    user
+  );
 
+  // Always redirect root path to login page, regardless of authentication status
   if (location.pathname === "/") {
-    if (!isAuthenticated) {
-      return <Navigate to="/auth/login" />;
-    } else {
-      if (user?.role === "admin") {
-        return <Navigate to="/admin/dashboard" />;
-      } else {
-        return <Navigate to="/shop/home" />;
-      }
-    }
+    console.log("Root path accessed, redirecting to login");
+    return <Navigate to="/auth/login" replace />;
   }
 
   if (
@@ -34,6 +36,8 @@ function CheckAuth({ isAuthenticated, user, children }) {
   ) {
     if (user?.role === "admin") {
       return <Navigate to="/admin/dashboard" />;
+    } else if (user?.role === "parlor_owner") {
+      return <Navigate to="/parlor-owner/dashboard" />;
     } else {
       return <Navigate to="/shop/home" />;
     }
@@ -49,13 +53,37 @@ function CheckAuth({ isAuthenticated, user, children }) {
 
   if (
     isAuthenticated &&
+    user?.role !== "parlor_owner" &&
+    location.pathname.includes("parlor-owner")
+  ) {
+    return <Navigate to="/unauth-page" />;
+  }
+
+  if (
+    isAuthenticated &&
     user?.role === "admin" &&
     location.pathname.includes("shop")
   ) {
     return <Navigate to="/admin/dashboard" />;
   }
 
+  if (
+    isAuthenticated &&
+    user?.role === "parlor_owner" &&
+    location.pathname.includes("shop")
+  ) {
+    return <Navigate to="/parlor-owner" />;
+  }
+
   return <>{children}</>;
 }
+
+CheckAuth.propTypes = {
+  isAuthenticated: PropTypes.bool.isRequired,
+  user: PropTypes.shape({
+    role: PropTypes.string,
+  }),
+  children: PropTypes.node.isRequired,
+};
 
 export default CheckAuth;

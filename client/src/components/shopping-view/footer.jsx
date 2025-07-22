@@ -40,6 +40,14 @@ function Footer() {
             </li>
             <li>
               <a
+                href="/shop/parlors"
+                className="hover:underline hover:text-white"
+              >
+                Parlors
+              </a>
+            </li>
+            <li>
+              <a
                 href="/shop/account"
                 className="hover:underline hover:text-white"
               >

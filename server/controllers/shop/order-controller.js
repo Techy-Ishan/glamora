@@ -1,4 +1,7 @@
-const paypal = require("../../helpers/paypal");
+const {
+  initiateKhaltiPayment,
+  verifyKhaltiPayment,
+} = require("../../helpers/khalti");
 const Order = require("../../models/Order");
 const Cart = require("../../models/Cart");
 const Product = require("../../models/Product");
@@ -15,134 +18,194 @@ const createOrder = async (req, res) => {
       totalAmount,
       orderDate,
       orderUpdateDate,
-      paymentId,
-      payerId,
       cartId,
     } = req.body;
 
-    const create_payment_json = {
-      intent: "sale",
-      payer: {
-        payment_method: "paypal",
+    // Generate unique purchase order ID
+    const purchaseOrderId = `ORDER_${Date.now()}_${userId}`;
+
+    // Convert amount to paisa (Khalti expects amount in paisa)
+    const amountInPaisa = Math.round(totalAmount * 100);
+
+    // Prepare Khalti payment data
+    const khaltiPaymentData = {
+      return_url: `${
+        process.env.CLIENT_URL || "http://localhost:5173"
+      }/shop/khalti-return`,
+      website_url: process.env.CLIENT_URL || "http://localhost:5173",
+      amount: amountInPaisa,
+      purchase_order_id: purchaseOrderId,
+      purchase_order_name: `Glamora Order - ${cartItems.length} items`,
+      customer_info: {
+        name: addressInfo.address.split(",")[0] || "Customer", // Extract name from address
+        email: "customer@glamora.com", // You might want to add email to user model
+        phone: addressInfo.phone,
       },
-      redirect_urls: {
-        return_url: "http://localhost:5173/shop/paypal-return",
-        cancel_url: "http://localhost:5173/shop/paypal-cancel",
-      },
-      transactions: [
+      amount_breakdown: [
         {
-          item_list: {
-            items: cartItems.map((item) => ({
-              name: item.title,
-              sku: item.productId,
-              price: item.price.toFixed(2),
-              currency: "USD",
-              quantity: item.quantity,
-            })),
-          },
-          amount: {
-            currency: "USD",
-            total: totalAmount.toFixed(2),
-          },
-          description: "description",
+          label: "Product Total",
+          amount: amountInPaisa,
         },
       ],
+      product_details: cartItems.map((item, index) => ({
+        identity: item.productId,
+        name: item.title,
+        total_price: Math.round(item.price * item.quantity * 100),
+        quantity: item.quantity,
+        unit_price: Math.round(item.price * 100),
+      })),
+      merchant_username: "subashpoudyal43@gmail.com",
+      merchant_extra: JSON.stringify({ orderId: purchaseOrderId }),
     };
 
-    paypal.payment.create(create_payment_json, async (error, paymentInfo) => {
-      if (error) {
-        console.log(error);
+    console.log(
+      JSON.stringify(khaltiPaymentData, null, 2),
+      "Khalti Payment Data"
+    );
 
-        return res.status(500).json({
-          success: false,
-          message: "Error while creating paypal payment",
-        });
-      } else {
-        const newlyCreatedOrder = new Order({
-          userId,
-          cartId,
-          cartItems,
-          addressInfo,
-          orderStatus,
-          paymentMethod,
-          paymentStatus,
-          totalAmount,
-          orderDate,
-          orderUpdateDate,
-          paymentId,
-          payerId,
-        });
+    try {
+      // Initiate Khalti payment
+      const khaltiResponse = await initiateKhaltiPayment(khaltiPaymentData);
+      console.log(JSON.stringify(khaltiResponse, null, 2), "Khalti Response");
 
-        await newlyCreatedOrder.save();
+      // Create order in database
+      const newlyCreatedOrder = new Order({
+        userId,
+        cartId,
+        cartItems,
+        addressInfo,
+        orderStatus,
+        paymentMethod: "khalti",
+        paymentStatus,
+        totalAmount,
+        orderDate,
+        orderUpdateDate,
+        khaltiPidx: khaltiResponse.pidx,
+        // Legacy fields for compatibility
+        paymentId: "",
+        payerId: "",
+      });
 
-        const approvalURL = paymentInfo.links.find(
-          (link) => link.rel === "approval_url"
-        ).href;
+      await newlyCreatedOrder.save();
 
-        res.status(201).json({
-          success: true,
-          approvalURL,
-          orderId: newlyCreatedOrder._id,
-        });
-      }
-    });
+      res.status(201).json({
+        success: true,
+        approvalURL: khaltiResponse.payment_url,
+        orderId: newlyCreatedOrder._id,
+        pidx: khaltiResponse.pidx,
+      });
+    } catch (khaltiError) {
+      console.error("Khalti payment initiation error:", khaltiError);
+      return res.status(500).json({
+        success: false,
+        message: "Error while creating Khalti payment",
+        error: khaltiError,
+      });
+    }
   } catch (e) {
     console.log(e);
     res.status(500).json({
       success: false,
-      message: "Some error occured!",
+      message: "Some error occurred!",
     });
   }
 };
 
 const capturePayment = async (req, res) => {
   try {
-    const { paymentId, payerId, orderId } = req.body;
+    const { pidx, orderId } = req.body;
 
     let order = await Order.findById(orderId);
 
     if (!order) {
       return res.status(404).json({
         success: false,
-        message: "Order can not be found",
+        message: "Order cannot be found",
       });
     }
 
-    order.paymentStatus = "paid";
-    order.orderStatus = "confirmed";
-    order.paymentId = paymentId;
-    order.payerId = payerId;
+    try {
+      // Verify payment with Khalti
+      const khaltiVerification = await verifyKhaltiPayment(pidx);
 
-    for (let item of order.cartItems) {
-      let product = await Product.findById(item.productId);
+      if (khaltiVerification.status === "Completed") {
+        order.paymentStatus = "paid";
+        order.orderStatus = "confirmed";
+        order.khaltiTransactionId = khaltiVerification.transaction_id;
 
-      if (!product) {
-        return res.status(404).json({
+        // Update product stock
+        for (let item of order.cartItems) {
+          let product = await Product.findById(item.productId);
+
+          if (!product) {
+            return res.status(404).json({
+              success: false,
+              message: `Not enough stock for this product ${item.title}`,
+            });
+          }
+
+          product.totalStock -= item.quantity;
+          await product.save();
+        }
+
+        // Delete cart
+        const getCartId = order.cartId;
+        await Cart.findByIdAndDelete(getCartId);
+
+        await order.save();
+
+        res.status(200).json({
+          success: true,
+          message: "Order confirmed",
+          data: order,
+        });
+      } else {
+        // Handle other statuses
+        let orderStatus = "pending";
+        let paymentStatus = "pending";
+
+        switch (khaltiVerification.status) {
+          case "Pending":
+            orderStatus = "pending";
+            paymentStatus = "pending";
+            break;
+          case "User canceled":
+          case "Expired":
+            orderStatus = "cancelled";
+            paymentStatus = "failed";
+            break;
+          case "Refunded":
+            orderStatus = "refunded";
+            paymentStatus = "refunded";
+            break;
+          default:
+            orderStatus = "pending";
+            paymentStatus = "pending";
+        }
+
+        order.orderStatus = orderStatus;
+        order.paymentStatus = paymentStatus;
+        await order.save();
+
+        res.status(400).json({
           success: false,
-          message: `Not enough stock for this product ${product.title}`,
+          message: `Payment ${khaltiVerification.status.toLowerCase()}`,
+          data: order,
         });
       }
-
-      product.totalStock -= item.quantity;
-
-      await product.save();
+    } catch (khaltiError) {
+      console.error("Khalti verification error:", khaltiError);
+      return res.status(500).json({
+        success: false,
+        message: "Error verifying payment with Khalti",
+        error: khaltiError,
+      });
     }
-
-    const getCartId = order.cartId;
-    await Cart.findByIdAndDelete(getCartId);
-
-    await order.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Order confirmed",
-      data: order,
-    });
   } catch (e) {
     console.log(e);
     res.status(500).json({
       success: false,
-      message: "Some error occured!",
+      message: "Some error occurred!",
     });
   }
 };

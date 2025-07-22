@@ -14,6 +14,13 @@ export const registerFormControls = [
     type: "email",
   },
   {
+    name: "phone",
+    label: "Phone Number",
+    placeholder: "Enter your phone number",
+    componentType: "input",
+    type: "tel",
+  },
+  {
     name: "password",
     label: "Password",
     placeholder: "Enter your password",
@@ -114,6 +121,11 @@ export const shoppingViewHeaderMenuItems = [
     id: "home",
     label: "Home",
     path: "/shop/home",
+  },
+  {
+    id: "parlors",
+    label: "Parlors",
+    path: "/shop/parlors",
   },
   {
     id: "products",
