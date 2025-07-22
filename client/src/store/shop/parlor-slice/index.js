@@ -38,7 +38,8 @@ export const createAppointment = createAsyncThunk(
   async (appointmentData) => {
     const response = await axios.post(
       "http://localhost:5000/api/shop/appointments/book",
-      appointmentData
+      appointmentData,
+      { withCredentials: true }
     );
     return response.data;
   }
@@ -46,17 +47,22 @@ export const createAppointment = createAsyncThunk(
 
 export const fetchCustomerAppointments = createAsyncThunk(
   "/shop/appointments/fetchCustomer",
-  async (_, { getState }) => {
-    const { auth } = getState();
-    const response = await axios.get(
-      `http://localhost:5000/api/shop/appointments/customer/${auth.user.id}`,
-      {
-        headers: {
-          Authorization: `Bearer ${auth.token}`,
-        },
-      }
-    );
-    return response.data;
+  async (_, { rejectWithValue }) => {
+    try {
+      console.log("Redux: Fetching customer appointments");
+      const response = await axios.get(
+        `http://localhost:5000/api/shop/appointments/my-appointments`,
+        { withCredentials: true }
+      );
+      console.log("Redux: Customer appointments response:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Redux: Customer appointments error:",
+        error.response?.data || error.message
+      );
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
@@ -67,11 +73,7 @@ export const cancelAppointment = createAsyncThunk(
     const response = await axios.put(
       `http://localhost:5000/api/shop/appointments/cancel/${appointmentId}`,
       { customerId: auth.user.id },
-      {
-        headers: {
-          Authorization: `Bearer ${auth.token}`,
-        },
-      }
+      { withCredentials: true }
     );
     return response.data;
   }
@@ -130,7 +132,10 @@ const shopParlorSlice = createSlice({
       })
       .addCase(createAppointment.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.appointments.unshift(action.payload.data);
+        // Add the new appointment to the customer appointments list
+        if (action.payload.data) {
+          state.customerAppointments.unshift(action.payload.data);
+        }
       })
       .addCase(createAppointment.rejected, (state) => {
         state.isLoading = false;
@@ -142,9 +147,10 @@ const shopParlorSlice = createSlice({
         state.isLoading = false;
         state.customerAppointments = action.payload.data;
       })
-      .addCase(fetchCustomerAppointments.rejected, (state) => {
+      .addCase(fetchCustomerAppointments.rejected, (state, action) => {
         state.isLoading = false;
         state.customerAppointments = [];
+        console.error("Customer appointments fetch rejected:", action.payload);
       })
       .addCase(cancelAppointment.pending, (state) => {
         state.isLoading = true;

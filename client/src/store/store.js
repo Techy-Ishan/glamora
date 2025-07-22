@@ -3,6 +3,7 @@ import authReducer from "./auth-slice";
 import adminProductsSlice from "./admin/products-slice";
 import adminOrderSlice from "./admin/order-slice";
 import adminParlorSlice from "./admin/parlor-slice";
+import adminAppointmentsSlice from "./admin/appointments-slice";
 
 import shopProductsSlice from "./shop/products-slice";
 import shopCartSlice from "./shop/cart-slice";
@@ -20,6 +21,7 @@ const store = configureStore({
     adminProducts: adminProductsSlice,
     adminOrder: adminOrderSlice,
     adminParlors: adminParlorSlice,
+    adminAppointments: adminAppointmentsSlice,
 
     shopProducts: shopProductsSlice,
     shopCart: shopCartSlice,

@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   ShoppingBasket,
   Building,
+  Calendar,
 } from "lucide-react";
 import { Fragment } from "react";
 import { useNavigate } from "react-router-dom";
@@ -33,6 +34,12 @@ const adminSidebarMenuItems = [
     label: "Parlors",
     path: "/admin/parlors",
     icon: <Building />,
+  },
+  {
+    id: "appointments",
+    label: "Parlor Appointments",
+    path: "/admin/appointments",
+    icon: <Calendar />,
   },
 ];
 

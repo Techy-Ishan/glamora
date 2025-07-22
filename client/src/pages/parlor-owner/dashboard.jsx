@@ -8,6 +8,7 @@ import {
   fetchParlorOwnerAppointments,
   updateAppointmentStatus,
 } from "@/store/admin/parlor-slice";
+import { useToast } from "@/components/ui/use-toast";
 import {
   CalendarIcon,
   ClockIcon,
@@ -16,6 +17,7 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   AlertCircleIcon,
+  RefreshCwIcon,
 } from "lucide-react";
 
 function ParlorOwnerDashboard() {
@@ -24,17 +26,31 @@ function ParlorOwnerDashboard() {
     (state) => state.adminParlors
   );
   const { user } = useSelector((state) => state.auth);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user?.id) {
       dispatch(fetchParlorOwnerAppointments(user.id));
+
+      // Refresh appointments every 30 seconds to catch new bookings
+      const interval = setInterval(() => {
+        dispatch(fetchParlorOwnerAppointments(user.id));
+      }, 30000);
+
+      return () => clearInterval(interval);
     }
   }, [dispatch, user?.id]);
+
+  const handleRefresh = () => {
+    if (user?.id) {
+      dispatch(fetchParlorOwnerAppointments(user.id));
+    }
+  };
 
   const filterAppointmentsByStatus = (status) => {
     return (
       parlorOwnerAppointments?.filter(
-        (appointment) => appointment.appointmentStatus === status
+        (appointment) => appointment.status === status
       ) || []
     );
   };
@@ -44,9 +60,20 @@ function ParlorOwnerDashboard() {
       await dispatch(
         updateAppointmentStatus({ appointmentId, status: newStatus })
       ).unwrap();
+
+      toast({
+        title: "Success",
+        description: `Appointment ${newStatus} successfully`,
+      });
+
       dispatch(fetchParlorOwnerAppointments(user.id));
     } catch (error) {
       console.error("Failed to update appointment status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update appointment status",
+        variant: "destructive",
+      });
     }
   };
 
@@ -88,7 +115,7 @@ function ParlorOwnerDashboard() {
           <div>
             <CardTitle className="flex items-center gap-2 text-lg">
               <UserIcon className="w-5 h-5 text-gray-600" />
-              {appointment.userName}
+              {appointment.customerId?.userName || "Unknown Customer"}
             </CardTitle>
             <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
               <span className="flex items-center gap-1">
@@ -101,30 +128,58 @@ function ParlorOwnerDashboard() {
               </span>
               <span className="flex items-center gap-1">
                 <PhoneIcon className="w-4 h-4" />
-                {appointment.userPhone}
+                {appointment.customerId?.phone || "No phone"}
               </span>
             </div>
           </div>
-          <Badge
-            className={`${getStatusColor(
-              appointment.appointmentStatus
-            )} border-0`}
-          >
-            {appointment.appointmentStatus.charAt(0).toUpperCase() +
-              appointment.appointmentStatus.slice(1)}
+          <Badge className={`${getStatusColor(appointment.status)} border-0`}>
+            {appointment.status.charAt(0).toUpperCase() +
+              appointment.status.slice(1)}
           </Badge>
         </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
           <div>
-            <p className="text-sm font-medium text-gray-700">Services:</p>
+            <p className="text-sm font-medium text-gray-700">Customer Email:</p>
             <p className="text-gray-600">
-              {appointment.notes || "No specific services mentioned"}
+              {appointment.customerId?.email || "No email provided"}
             </p>
           </div>
 
-          {appointment.appointmentStatus === "pending" && (
+          <div>
+            <p className="text-sm font-medium text-gray-700">Services:</p>
+            <div className="space-y-1">
+              {appointment.services && appointment.services.length > 0 ? (
+                appointment.services.map((service, index) => (
+                  <div key={index} className="text-sm text-gray-600">
+                    • {service.serviceName} ({service.duration} min) - Rs.
+                    {service.price}
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-600">No specific services mentioned</p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-medium text-gray-700">Total Amount:</p>
+            <p className="font-semibold text-gray-600">
+              Rs.{appointment.totalAmount || 0}
+            </p>
+          </div>
+
+          {appointment.customerNotes && (
+            <div>
+              <p className="text-sm font-medium text-gray-700">
+                Customer Notes:
+              </p>
+              <p className="text-gray-600">{appointment.customerNotes}</p>
+            </div>
+          )}
+
+          {appointment.status === "pending" && (
             <div className="flex gap-2 pt-2">
               <Button
                 size="sm"
@@ -146,7 +201,7 @@ function ParlorOwnerDashboard() {
             </div>
           )}
 
-          {appointment.appointmentStatus === "confirmed" && (
+          {appointment.status === "confirmed" && (
             <div className="flex gap-2 pt-2">
               <Button
                 size="sm"
@@ -183,9 +238,22 @@ function ParlorOwnerDashboard() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Parlor Dashboard</h1>
-          <p className="text-gray-600">Manage your appointments and bookings</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Parlor Dashboard</h1>
+            <p className="text-gray-600">
+              Manage your appointments and bookings
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            className="flex items-center gap-2"
+          >
+            <RefreshCwIcon className="w-4 h-4" />
+            Refresh
+          </Button>
         </div>
       </div>
 

@@ -4,6 +4,10 @@ const Parlor = require("../../models/Parlor");
 // Customer Controllers
 const createAppointment = async (req, res) => {
   try {
+    console.log("=== CREATE APPOINTMENT ===");
+    console.log("Request body:", req.body);
+    console.log("Authenticated user:", req.user);
+
     const {
       parlorId,
       customerId,
@@ -29,8 +33,17 @@ const createAppointment = async (req, res) => {
     const processedServices = services.map((service) => {
       totalDuration += service.duration;
       totalAmount += service.price;
-      return service;
+      return {
+        serviceId: service.serviceId,
+        serviceName: service.serviceName,
+        duration: service.duration,
+        price: service.price,
+      };
     });
+
+    console.log("Processed services:", processedServices);
+    console.log("Total duration:", totalDuration, "minutes");
+    console.log("Total amount:", totalAmount);
 
     const newAppointment = new Appointment({
       parlorId,
@@ -46,6 +59,7 @@ const createAppointment = async (req, res) => {
     });
 
     await newAppointment.save();
+    console.log("Appointment saved with ID:", newAppointment._id);
 
     const populatedAppointment = await Appointment.findById(newAppointment._id)
       .populate("parlorId", "name address contact")
@@ -68,17 +82,64 @@ const createAppointment = async (req, res) => {
 const getCustomerAppointments = async (req, res) => {
   try {
     const { customerId } = req.params;
+    console.log("=== GET CUSTOMER APPOINTMENTS ===");
+    console.log("Customer ID from params:", customerId);
+    console.log("Authenticated user:", req.user);
 
-    const appointments = await Appointment.find({ customerId })
+    // Use the customerId from params if provided, otherwise use authenticated user ID
+    const userId = customerId || req.user.id;
+
+    const appointments = await Appointment.find({ customerId: userId })
       .populate("parlorId", "name address contact images")
       .sort({ appointmentDate: -1 });
+
+    console.log("Found appointments:", appointments.length);
+    res.status(200).json({
+      success: true,
+      data: appointments,
+    });
+  } catch (error) {
+    console.log("Error fetching customer appointments:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching appointments",
+    });
+  }
+};
+
+const getMyAppointments = async (req, res) => {
+  try {
+    console.log("=== GET MY APPOINTMENTS ===");
+    console.log("Authenticated user:", req.user);
+    console.log("User ID:", req.user?.id);
+    console.log("Request received at:", new Date().toISOString());
+
+    // Count all appointments in database
+    const totalCount = await Appointment.countDocuments({});
+    console.log("Total appointments in database:", totalCount);
+
+    // Count appointments for this user
+    const userCount = await Appointment.countDocuments({
+      customerId: req.user.id,
+    });
+    console.log("Appointments for user", req.user.id, ":", userCount);
+
+    const appointments = await Appointment.find({ customerId: req.user.id })
+      .populate("parlorId", "name address contact images")
+      .sort({ appointmentDate: -1 });
+
+    console.log("Found my appointments:", appointments.length);
+    console.log(
+      "Sample appointment:",
+      appointments[0] ? appointments[0]._id : "No appointments for this user"
+    );
 
     res.status(200).json({
       success: true,
       data: appointments,
     });
   } catch (error) {
-    console.log(error);
+    console.log("Error fetching my appointments:", error);
     res.status(500).json({
       success: false,
       message: "Error fetching appointments",
@@ -131,26 +192,33 @@ const cancelAppointment = async (req, res) => {
 const getParlorAppointments = async (req, res) => {
   try {
     const { ownerId } = req.params;
+    console.log("=== GET PARLOR APPOINTMENTS ===");
+    console.log("Owner ID:", ownerId);
+    console.log("Authenticated user:", req.user);
 
     // First find the parlor owned by this user
     const parlor = await Parlor.findOne({ ownerId });
     if (!parlor) {
+      console.log("No parlor found for owner:", ownerId);
       return res.status(404).json({
         success: false,
         message: "No parlor found for this owner",
       });
     }
 
+    console.log("Found parlor:", parlor.name, "ID:", parlor._id);
+
     const appointments = await Appointment.find({ parlorId: parlor._id })
       .populate("customerId", "userName email phone")
       .sort({ appointmentDate: -1 });
 
+    console.log("Found appointments for parlor:", appointments.length);
     res.status(200).json({
       success: true,
       data: appointments,
     });
   } catch (error) {
-    console.log(error);
+    console.log("Error fetching parlor appointments:", error);
     res.status(500).json({
       success: false,
       message: "Error fetching appointments",
@@ -293,6 +361,7 @@ module.exports = {
   // Customer controllers
   createAppointment,
   getCustomerAppointments,
+  getMyAppointments,
   cancelAppointment,
 
   // Parlor owner controllers

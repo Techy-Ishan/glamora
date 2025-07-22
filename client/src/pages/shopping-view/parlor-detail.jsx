@@ -3,7 +3,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -26,6 +25,7 @@ import {
 import {
   fetchActiveParlors,
   createAppointment,
+  fetchCustomerAppointments,
 } from "@/store/shop/parlor-slice";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -63,11 +63,6 @@ function ParlorDetail() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState("");
   const [customerNotes, setCustomerNotes] = useState("");
-  const [bookingForm, setBookingForm] = useState({
-    name: "",
-    phone: "",
-    email: "",
-  });
 
   useEffect(() => {
     if (parlorList.length === 0) {
@@ -155,6 +150,8 @@ function ParlorDetail() {
         toast({
           title: "Appointment booked successfully!",
         });
+        // Refresh customer appointments after booking
+        dispatch(fetchCustomerAppointments());
         navigate("/shop/account");
       } else {
         toast({
@@ -304,99 +301,47 @@ function ParlorDetail() {
 
           {/* Right Column - Booking */}
           <div className="space-y-6">
-            {/* Booking Summary */}
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="mb-4 text-lg font-bold">Booking Summary</h3>
-
-                {selectedServices.map((service) => (
-                  <div
-                    key={service.serviceId}
-                    className="flex items-center justify-between mb-2"
-                  >
-                    <span className="text-sm">{service.serviceName}</span>
-                    <span className="font-medium">Rs.{service.price}</span>
-                  </div>
-                ))}
-
-                <Separator className="my-4" />
-
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="font-medium">Total Duration:</span>
-                    <span>{calculateTotalDuration()} min</span>
-                  </div>
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>Total Amount:</span>
-                    <span>Rs.{calculateTotalAmount()}</span>
-                  </div>
-                </div>
-
-                {calculateTotalAmount() > 0 && (
-                  <Button
-                    className="w-full mt-4"
-                    onClick={handleBookAppointment}
-                  >
-                    Book Appointment
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Booking Form */}
+            {/* Combined Booking Card */}
             <Card>
               <CardContent className="p-6">
                 <h3 className="mb-4 text-lg font-bold">
                   Book Your Appointment
                 </h3>
 
+                {/* Booking Summary Section */}
+                {selectedServices.length > 0 && (
+                  <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                    <h4 className="mb-3 text-sm font-semibold text-gray-700">
+                      Booking Summary
+                    </h4>
+
+                    {selectedServices.map((service) => (
+                      <div
+                        key={service.serviceId}
+                        className="flex items-center justify-between mb-2"
+                      >
+                        <span className="text-sm">{service.serviceName}</span>
+                        <span className="font-medium">Rs.{service.price}</span>
+                      </div>
+                    ))}
+
+                    <Separator className="my-3" />
+
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="font-medium">Total Duration:</span>
+                        <span>{calculateTotalDuration()} min</span>
+                      </div>
+                      <div className="flex justify-between text-base font-bold">
+                        <span>Total Amount:</span>
+                        <span>Rs.{calculateTotalAmount()}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Booking Form Section */}
                 <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Name *</Label>
-                    <Input
-                      id="name"
-                      value={bookingForm.name}
-                      onChange={(e) =>
-                        setBookingForm((prev) => ({
-                          ...prev,
-                          name: e.target.value,
-                        }))
-                      }
-                      placeholder="Enter your name"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="phone">Phone *</Label>
-                    <Input
-                      id="phone"
-                      value={bookingForm.phone}
-                      onChange={(e) =>
-                        setBookingForm((prev) => ({
-                          ...prev,
-                          phone: e.target.value,
-                        }))
-                      }
-                      placeholder="Enter your phone number"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={bookingForm.email}
-                      onChange={(e) =>
-                        setBookingForm((prev) => ({
-                          ...prev,
-                          email: e.target.value,
-                        }))
-                      }
-                      placeholder="Enter your email"
-                    />
-                  </div>
-
                   <div>
                     <Label>Select Date *</Label>
                     <Popover>

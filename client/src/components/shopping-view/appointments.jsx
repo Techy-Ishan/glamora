@@ -15,16 +15,29 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   AlertCircleIcon,
+  RefreshCwIcon,
 } from "lucide-react";
 
 function ShoppingAppointments() {
   const dispatch = useDispatch();
   const { customerAppointments, isLoading } = useSelector(
-    (state) => state.shopParlor
+    (state) => state.shopParlors
   );
 
+  console.log("ShoppingAppointments component loaded");
+  console.log("customerAppointments:", customerAppointments);
+  console.log("isLoading:", isLoading);
+
   useEffect(() => {
+    console.log("Dispatching fetchCustomerAppointments");
     dispatch(fetchCustomerAppointments());
+
+    // Refresh appointments every 30 seconds to catch new bookings
+    const interval = setInterval(() => {
+      dispatch(fetchCustomerAppointments());
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, [dispatch]);
 
   const getStatusBadge = (status) => {
@@ -56,15 +69,27 @@ function ShoppingAppointments() {
 
     return (
       <Badge variant={config.variant} className="flex items-center gap-1">
-        <IconComponent className="h-3 w-3" />
+        <IconComponent className="w-3 h-3" />
         {config.label}
       </Badge>
     );
   };
 
-  const handleCancelAppointment = (appointmentId) => {
+  const handleRefresh = () => {
+    dispatch(fetchCustomerAppointments());
+  };
+
+  const handleCancelAppointment = async (appointmentId) => {
     if (window.confirm("Are you sure you want to cancel this appointment?")) {
-      dispatch(cancelAppointment(appointmentId));
+      try {
+        console.log("Cancelling appointment:", appointmentId);
+        await dispatch(cancelAppointment(appointmentId)).unwrap();
+        // Refresh the appointments list after successful cancellation
+        dispatch(fetchCustomerAppointments());
+      } catch (error) {
+        console.error("Failed to cancel appointment:", error);
+        alert("Failed to cancel appointment. Please try again.");
+      }
     }
   };
 
@@ -86,17 +111,22 @@ function ShoppingAppointments() {
   };
 
   if (isLoading) {
+    console.log("Customer appointments loading...");
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-b-2 border-gray-900 rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (!customerAppointments || customerAppointments.length === 0) {
+    console.log(
+      "No customer appointments found, customerAppointments:",
+      customerAppointments
+    );
     return (
-      <div className="text-center py-12">
-        <CalendarIcon className="mx-auto h-12 w-12 text-gray-400" />
+      <div className="py-12 text-center">
+        <CalendarIcon className="w-12 h-12 mx-auto text-gray-400" />
         <h3 className="mt-2 text-sm font-medium text-gray-900">
           No appointments
         </h3>
@@ -112,8 +142,23 @@ function ShoppingAppointments() {
     );
   }
 
+  console.log("Rendering customer appointments:", customerAppointments.length);
+
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">My Appointments</h2>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          className="flex items-center gap-2"
+        >
+          <RefreshCwIcon className="w-4 h-4" />
+          Refresh
+        </Button>
+      </div>
+
       {customerAppointments.map((appointment) => (
         <Card key={appointment._id} className="overflow-hidden">
           <CardHeader className="pb-4">
@@ -122,7 +167,7 @@ function ShoppingAppointments() {
                 <CardTitle className="text-lg font-semibold">
                   {appointment.parlorId?.name}
                 </CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="mt-1 text-sm text-muted-foreground">
                   Appointment #{appointment._id.slice(-8).toUpperCase()}
                 </p>
               </div>
@@ -134,25 +179,25 @@ function ShoppingAppointments() {
             {/* Date and Time */}
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4 text-gray-500" />
+                <CalendarIcon className="w-4 h-4 text-gray-500" />
                 <span>{formatDate(appointment.appointmentDate)}</span>
               </div>
               <div className="flex items-center gap-2">
-                <ClockIcon className="h-4 w-4 text-gray-500" />
+                <ClockIcon className="w-4 h-4 text-gray-500" />
                 <span>{formatTime(appointment.appointmentTime)}</span>
               </div>
             </div>
 
             {/* Services */}
             <div>
-              <h4 className="font-medium text-sm mb-2">Services:</h4>
+              <h4 className="mb-2 text-sm font-medium">Services:</h4>
               <div className="space-y-2">
                 {appointment.services.map((service, index) => (
                   <div
                     key={index}
-                    className="flex justify-between items-center bg-gray-50 p-2 rounded"
+                    className="flex items-center justify-between p-2 rounded bg-gray-50"
                   >
-                    <span className="text-sm">{service.name}</span>
+                    <span className="text-sm">{service.serviceName}</span>
                     <span className="text-sm font-medium">
                       Rs.{service.price}
                     </span>
@@ -162,27 +207,32 @@ function ShoppingAppointments() {
             </div>
 
             {/* Parlor Contact */}
-            <div className="pt-2 border-t space-y-2">
+            <div className="pt-2 space-y-2 border-t">
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <MapPinIcon className="h-4 w-4" />
-                <span>{appointment.parlorId?.address}</span>
+                <MapPinIcon className="w-4 h-4" />
+                <span>
+                  {appointment.parlorId?.address
+                    ? `${appointment.parlorId.address.street}, ${appointment.parlorId.address.city}, ${appointment.parlorId.address.state} - ${appointment.parlorId.address.pincode}`
+                    : "N/A"}
+                </span>
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <PhoneIcon className="h-4 w-4" />
-                <span>{appointment.parlorId?.phone}</span>
+                <PhoneIcon className="w-4 h-4" />
+                <span>{appointment.parlorId?.contact?.phone || "N/A"}</span>
               </div>
             </div>
 
             {/* Total Amount */}
-            <div className="flex justify-between items-center pt-2 border-t">
+            <div className="flex items-center justify-between pt-2 border-t">
               <span className="font-medium">Total Amount:</span>
-              <span className="font-bold text-lg">
+              <span className="text-lg font-bold">
                 Rs.{appointment.totalAmount}
               </span>
             </div>
 
             {/* Action Button */}
-            {appointment.status === "pending" && (
+            {(appointment.status === "pending" ||
+              appointment.status === "confirmed") && (
               <div className="pt-2">
                 <Button
                   variant="outline"

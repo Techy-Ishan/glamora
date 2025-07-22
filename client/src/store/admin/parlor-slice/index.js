@@ -104,10 +104,11 @@ export const fetchParlorOwnerAppointments = createAsyncThunk(
 
 export const updateAppointmentStatus = createAsyncThunk(
   "/admin/parlors/updateAppointmentStatus",
-  async ({ appointmentId, status }) => {
+  async ({ appointmentId, status }, { getState }) => {
+    const { user } = getState().auth;
     const response = await axios.put(
       `http://localhost:5000/api/shop/appointments/update-status/${appointmentId}`,
-      { status },
+      { status, ownerId: user.id },
       {
         withCredentials: true,
       }
