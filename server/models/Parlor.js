@@ -25,7 +25,6 @@ const ParlorSchema = new mongoose.Schema(
     contact: {
       phone: { type: String, required: true },
       email: String,
-      website: String,
     },
     images: [String], // Array of image URLs
     services: [

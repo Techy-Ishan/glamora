@@ -3,11 +3,13 @@ const express = require("express");
 const {
   getFilteredProducts,
   getProductDetails,
+  getFeaturedProducts,
 } = require("../../controllers/shop/products-controller");
 
 const router = express.Router();
 
 router.get("/get", getFilteredProducts);
 router.get("/get/:id", getProductDetails);
+router.get("/featured", getFeaturedProducts);
 
 module.exports = router;

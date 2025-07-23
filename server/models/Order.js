@@ -1,7 +1,10 @@
 const mongoose = require("mongoose");
 
 const OrderSchema = new mongoose.Schema({
-  userId: String,
+  userId: {
+    type: mongoose.Schema.Types.Mixed, // Allows both String and ObjectId
+    required: true,
+  },
   cartId: String,
   cartItems: [
     {

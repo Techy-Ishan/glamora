@@ -40,7 +40,8 @@ function ShoppingAppointments() {
     return () => clearInterval(interval);
   }, [dispatch]);
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (appointment) => {
+    const status = appointment.status;
     const statusConfig = {
       pending: {
         variant: "secondary",
@@ -59,13 +60,32 @@ function ShoppingAppointments() {
       },
       cancelled: {
         variant: "destructive",
-        label: "Cancelled",
+        label:
+          appointment.cancelledBy === "customer"
+            ? "Cancelled by me"
+            : "Service not available",
+        message:
+          appointment.cancelledBy === "customer"
+            ? "You cancelled this appointment"
+            : "Services are not available for this time slot, please find the next slot",
         icon: XCircleIcon,
       },
     };
 
     const config = statusConfig[status] || statusConfig.pending;
     const IconComponent = config.icon;
+
+    if (status === "cancelled") {
+      return (
+        <div className="flex flex-col gap-1">
+          <Badge variant={config.variant} className="flex items-center gap-1">
+            <IconComponent className="w-3 h-3" />
+            {config.label}
+          </Badge>
+          <p className="mt-1 text-xs text-red-600">{config.message}</p>
+        </div>
+      );
+    }
 
     return (
       <Badge variant={config.variant} className="flex items-center gap-1">
@@ -160,7 +180,10 @@ function ShoppingAppointments() {
       </div>
 
       {customerAppointments.map((appointment) => (
-        <Card key={appointment._id} className="overflow-hidden">
+        <Card
+          key={appointment._id}
+          className="overflow-hidden transition-shadow duration-200 border-2 border-gray-800 shadow-lg hover:shadow-xl"
+        >
           <CardHeader className="pb-4">
             <div className="flex items-start justify-between">
               <div>
@@ -171,7 +194,7 @@ function ShoppingAppointments() {
                   Appointment #{appointment._id.slice(-8).toUpperCase()}
                 </p>
               </div>
-              {getStatusBadge(appointment.status)}
+              {getStatusBadge(appointment)}
             </div>
           </CardHeader>
 

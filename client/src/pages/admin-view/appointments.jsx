@@ -138,7 +138,10 @@ function AdminAppointments() {
 
       <div className="space-y-4">
         {allAppointments.map((appointment) => (
-          <Card key={appointment._id} className="overflow-hidden">
+          <Card
+            key={appointment._id}
+            className="border-2 border-gray-800 shadow-lg hover:shadow-xl transition-shadow duration-200 overflow-hidden"
+          >
             <CardHeader className="pb-4">
               <div className="flex items-start justify-between">
                 <div>
@@ -228,12 +231,6 @@ function AdminAppointments() {
                     <span className="font-medium">Email: </span>
                     <span>{appointment.parlorId?.contact?.email || "N/A"}</span>
                   </div>
-                  {appointment.parlorId?.contact?.website && (
-                    <div>
-                      <span className="font-medium">Website: </span>
-                      <span>{appointment.parlorId.contact.website}</span>
-                    </div>
-                  )}
                 </div>
               </div>
 

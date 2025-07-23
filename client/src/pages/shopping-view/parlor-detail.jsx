@@ -149,10 +149,14 @@ function ParlorDetail() {
       if (data?.payload?.success) {
         toast({
           title: "Appointment booked successfully!",
+          description:
+            "Your appointment is pending confirmation from the parlor owner. You will be notified once confirmed.",
         });
         // Refresh customer appointments after booking
         dispatch(fetchCustomerAppointments());
-        navigate("/shop/account");
+        navigate("/shop/account", {
+          state: { activeTab: "appointments" },
+        });
       } else {
         toast({
           title: "Failed to book appointment",

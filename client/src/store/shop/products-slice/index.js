@@ -38,6 +38,17 @@ export const fetchProductDetails = createAsyncThunk(
   }
 );
 
+export const fetchFeaturedProducts = createAsyncThunk(
+  "/products/fetchFeaturedProducts",
+  async () => {
+    const result = await axios.get(
+      `http://localhost:5000/api/shop/products/featured`
+    );
+
+    return result?.data;
+  }
+);
+
 const shoppingProductSlice = createSlice({
   name: "shoppingProducts",
   initialState,
@@ -69,6 +80,17 @@ const shoppingProductSlice = createSlice({
       .addCase(fetchProductDetails.rejected, (state, action) => {
         state.isLoading = false;
         state.productDetails = null;
+      })
+      .addCase(fetchFeaturedProducts.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(fetchFeaturedProducts.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.productList = action.payload.data;
+      })
+      .addCase(fetchFeaturedProducts.rejected, (state) => {
+        state.isLoading = false;
+        state.productList = [];
       });
   },
 });

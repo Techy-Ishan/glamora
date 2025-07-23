@@ -53,16 +53,34 @@ function AdminProducts() {
             id: currentEditedId,
             formData,
           })
-        ).then((data) => {
-          console.log(data, "edit");
+        )
+          .then((data) => {
+            console.log(data, "edit");
 
-          if (data?.payload?.success) {
-            dispatch(fetchAllProducts());
-            setFormData(initialFormData);
-            setOpenCreateProductsDialog(false);
-            setCurrentEditedId(null);
-          }
-        })
+            if (data?.payload?.success) {
+              dispatch(fetchAllProducts());
+              setFormData(initialFormData);
+              setOpenCreateProductsDialog(false);
+              setCurrentEditedId(null);
+              setImageFile(null);
+              setUploadedImageUrl("");
+              toast({
+                title: "Product updated successfully",
+              });
+            } else {
+              toast({
+                title: "Failed to update product",
+                variant: "destructive",
+              });
+            }
+          })
+          .catch((error) => {
+            console.error("Edit product error:", error);
+            toast({
+              title: "Failed to update product",
+              variant: "destructive",
+            });
+          })
       : dispatch(
           addNewProduct({
             ...formData,
@@ -116,6 +134,7 @@ function AdminProducts() {
         {productList && productList.length > 0
           ? productList.map((productItem) => (
               <AdminProductTile
+                key={productItem._id}
                 setFormData={setFormData}
                 setOpenCreateProductsDialog={setOpenCreateProductsDialog}
                 setCurrentEditedId={setCurrentEditedId}

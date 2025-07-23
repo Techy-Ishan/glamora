@@ -38,6 +38,11 @@ function CommonForm({
   const renderInputsByComponentType = (control) => {
     const value = getNestedValue(formData, control.name) || "";
 
+    // Debug logging for nested fields
+    if (control.name.includes(".")) {
+      console.log(`Field ${control.name}:`, value, "from formData:", formData);
+    }
+
     if (control.componentType === "input") {
       return (
         <Input
@@ -120,14 +125,15 @@ function CommonForm({
   function validate() {
     const newErrors = {};
     formControls.forEach((control) => {
-      const value = getNestedValue(formData, control.name) || "";
+      const rawValue = getNestedValue(formData, control.name);
+      const value = rawValue != null ? String(rawValue) : "";
       // Make salePrice truly optional
       if (
         control.componentType === "input" ||
         control.componentType === "textarea"
       ) {
         // Optional fields that don't require validation
-        const optionalFields = ["salePrice", "contact.website"];
+        const optionalFields = ["salePrice"];
         if (!optionalFields.includes(control.name) && !value.trim()) {
           newErrors[control.name] = `${control.label} is required`;
         } else if (control.type === "email" && value.trim()) {
@@ -146,13 +152,16 @@ function CommonForm({
           if (value.length < 6) {
             newErrors[control.name] =
               "Password must be at least 6 characters long";
-          } else if (!/[!@#$%^&*(),.?\":{}|<>]/.test(value)) {
+          } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(value)) {
             newErrors[control.name] =
               "Password must include at least one special character";
           }
         }
       }
-      if (control.componentType === "select" && (!value || value === "")) {
+      if (
+        control.componentType === "select" &&
+        (!rawValue || rawValue === "")
+      ) {
         newErrors[control.name] = `${control.label} is required`;
       }
     });

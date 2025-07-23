@@ -1,4 +1,4 @@
-import { LogOut, Menu, ShoppingCart, UserCog } from "lucide-react";
+import { LogOut, Menu, ShoppingCart, UserCog, Search } from "lucide-react";
 import {
   Link,
   useLocation,
@@ -62,9 +62,10 @@ function MenuItems() {
       {shoppingViewHeaderMenuItems.map((menuItem) => (
         <Label
           onClick={() => handleNavigate(menuItem)}
-          className="text-sm font-medium cursor-pointer"
+          className="flex items-center gap-1 text-sm font-medium cursor-pointer"
           key={menuItem.id}
         >
+          {menuItem.icon === "Search" && <Search className="w-4 h-4" />}
           {menuItem.label}
         </Label>
       ))}

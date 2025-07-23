@@ -26,8 +26,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  fetchAllFilteredProducts,
   fetchProductDetails,
+  fetchFeaturedProducts,
 } from "@/store/shop/products-slice";
 import ShoppingProductTile from "@/components/shopping-view/product-tile";
 import { useNavigate } from "react-router-dom";
@@ -119,12 +119,7 @@ function ShoppingHome() {
   }, [featureImageList]);
 
   useEffect(() => {
-    dispatch(
-      fetchAllFilteredProducts({
-        filterParams: {},
-        sortParams: "price-lowtohigh",
-      })
-    );
+    dispatch(fetchFeaturedProducts());
   }, [dispatch]);
 
   console.log(productList, "productList");

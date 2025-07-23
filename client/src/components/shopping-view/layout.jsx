@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import ShoppingHeader from "./header";
 import Footer from "./footer";
+import NotificationBanner from "@/components/common/notification-banner";
 
 function ShoppingLayout() {
   return (
@@ -11,6 +12,8 @@ function ShoppingLayout() {
         <Outlet />
       </main>
       <Footer />
+      {/* Notification Banner */}
+      <NotificationBanner />
     </div>
   );
 }

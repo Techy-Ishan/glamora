@@ -2,6 +2,7 @@ const {
   initiateKhaltiPayment,
   verifyKhaltiPayment,
 } = require("../../helpers/khalti");
+const mongoose = require("mongoose");
 const Order = require("../../models/Order");
 const Cart = require("../../models/Cart");
 const Product = require("../../models/Product");
@@ -214,7 +215,44 @@ const getAllOrdersByUser = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const orders = await Order.find({ userId });
+    console.log("=== DEBUG ORDER FETCH ===");
+    console.log("Requested userId:", userId, typeof userId);
+
+    // Try to find sample orders to see what format userId is stored in
+    const sampleOrders = await Order.find({}).limit(2);
+    console.log(
+      "Sample orders userId format:",
+      sampleOrders.map((order) => ({
+        userId: order.userId,
+        type: typeof order.userId,
+      }))
+    );
+
+    // Try multiple approaches
+    let orders = [];
+
+    // Approach 1: Direct match
+    orders = await Order.find({ userId: userId }).sort({ _id: -1 });
+    console.log("Direct match found:", orders.length);
+
+    // Approach 2: Try as string if no results
+    if (orders.length === 0) {
+      orders = await Order.find({ userId: userId.toString() }).sort({
+        _id: -1,
+      });
+      console.log("String match found:", orders.length);
+    }
+
+    // Approach 3: Try to find any orders for debugging
+    if (orders.length === 0) {
+      const allOrders = await Order.find({}).sort({ _id: -1 });
+      console.log("Total orders in database:", allOrders.length);
+      if (allOrders.length > 0) {
+        console.log("Sample order:", allOrders[0]);
+      }
+    }
+
+    console.log("=== END DEBUG ===");
 
     if (!orders.length) {
       return res.status(404).json({
@@ -228,10 +266,10 @@ const getAllOrdersByUser = async (req, res) => {
       data: orders,
     });
   } catch (e) {
-    console.log(e);
+    console.log("Error fetching user orders:", e);
     res.status(500).json({
       success: false,
-      message: "Some error occured!",
+      message: "Some error occurred!",
     });
   }
 };

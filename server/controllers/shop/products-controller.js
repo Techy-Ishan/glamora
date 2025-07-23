@@ -79,4 +79,26 @@ const getProductDetails = async (req, res) => {
   }
 };
 
-module.exports = { getFilteredProducts, getProductDetails };
+const getFeaturedProducts = async (req, res) => {
+  try {
+    // Get the 4 newest products (sorted by creation time)
+    const featuredProducts = await Product.find({}).sort({ _id: -1 }).limit(4);
+
+    res.status(200).json({
+      success: true,
+      data: featuredProducts,
+    });
+  } catch (e) {
+    console.log(e);
+    res.status(500).json({
+      success: false,
+      message: "Some error occurred",
+    });
+  }
+};
+
+module.exports = {
+  getFilteredProducts,
+  getProductDetails,
+  getFeaturedProducts,
+};

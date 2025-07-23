@@ -41,7 +41,6 @@ const initialFormData = {
   contact: {
     phone: "",
     email: "",
-    website: "",
   },
   services: [],
 };
@@ -101,13 +100,6 @@ const parlorFormControls = [
     componentType: "input",
     type: "email",
     placeholder: "Enter email address",
-  },
-  {
-    label: "Website",
-    name: "contact.website",
-    componentType: "input",
-    type: "text",
-    placeholder: "Enter website URL (optional)",
   },
 ];
 
@@ -179,14 +171,25 @@ function AdminParlors() {
 
   function handleEditParlor(parlor) {
     setCurrentEditedId(parlor._id);
-    setFormData({
-      name: parlor.name,
-      description: parlor.description,
-      ownerId: parlor.ownerId._id,
-      address: parlor.address,
-      contact: parlor.contact,
-      services: parlor.services,
-    });
+    console.log("Setting parlor data for edit:", parlor);
+    const editFormData = {
+      name: parlor.name || "",
+      description: parlor.description || "",
+      ownerId: parlor.ownerId?._id || "",
+      address: {
+        street: parlor.address?.street || "",
+        city: parlor.address?.city || "",
+        state: parlor.address?.state || "",
+        pincode: parlor.address?.pincode || "",
+      },
+      contact: {
+        phone: parlor.contact?.phone || "",
+        email: parlor.contact?.email || "",
+      },
+      services: parlor.services || [],
+    };
+    console.log("Formatted form data:", editFormData);
+    setFormData(editFormData);
     setOpenCreateEditSheet(true);
   }
 

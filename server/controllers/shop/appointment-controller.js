@@ -91,7 +91,7 @@ const getCustomerAppointments = async (req, res) => {
 
     const appointments = await Appointment.find({ customerId: userId })
       .populate("parlorId", "name address contact images")
-      .sort({ appointmentDate: -1 });
+      .sort({ _id: -1 }); // Sort by creation time (newest first)
 
     console.log("Found appointments:", appointments.length);
     res.status(200).json({
@@ -126,7 +126,7 @@ const getMyAppointments = async (req, res) => {
 
     const appointments = await Appointment.find({ customerId: req.user.id })
       .populate("parlorId", "name address contact images")
-      .sort({ appointmentDate: -1 });
+      .sort({ _id: -1 }); // Sort by creation time (newest first)
 
     console.log("Found my appointments:", appointments.length);
     console.log(
@@ -172,6 +172,7 @@ const cancelAppointment = async (req, res) => {
     }
 
     appointment.status = "cancelled";
+    appointment.cancelledBy = "customer";
     await appointment.save();
 
     res.status(200).json({
@@ -210,7 +211,7 @@ const getParlorAppointments = async (req, res) => {
 
     const appointments = await Appointment.find({ parlorId: parlor._id })
       .populate("customerId", "userName email phone")
-      .sort({ appointmentDate: -1 });
+      .sort({ _id: -1 }); // Sort by creation time (newest first)
 
     console.log("Found appointments for parlor:", appointments.length);
     res.status(200).json({
@@ -231,14 +232,22 @@ const updateAppointmentStatus = async (req, res) => {
     const { appointmentId } = req.params;
     const { status, parlorNotes, ownerId } = req.body;
 
+    console.log("=== UPDATE APPOINTMENT STATUS ===");
+    console.log("Appointment ID:", appointmentId);
+    console.log("New Status:", status);
+    console.log("Owner ID:", ownerId);
+
     // Verify the parlor owner has permission to update this appointment
     const parlor = await Parlor.findOne({ ownerId });
     if (!parlor) {
+      console.log("No parlor found for owner:", ownerId);
       return res.status(404).json({
         success: false,
         message: "No parlor found for this owner",
       });
     }
+
+    console.log("Found parlor:", parlor.name);
 
     const appointment = await Appointment.findOne({
       _id: appointmentId,
@@ -246,16 +255,30 @@ const updateAppointmentStatus = async (req, res) => {
     });
 
     if (!appointment) {
+      console.log("Appointment not found for parlor");
       return res.status(404).json({
         success: false,
         message: "Appointment not found",
       });
     }
 
+    console.log("Current appointment status:", appointment.status);
+    console.log("Updating to status:", status);
+
+    const oldStatus = appointment.status;
     appointment.status = status;
+
+    // Set cancelledBy field when status is cancelled
+    if (status === "cancelled") {
+      appointment.cancelledBy = "parlor";
+    }
+
     if (parlorNotes) {
       appointment.parlorNotes = parlorNotes;
     }
+
+    // Add timestamp for status change
+    appointment.statusUpdatedAt = new Date();
 
     await appointment.save();
 
@@ -263,13 +286,16 @@ const updateAppointmentStatus = async (req, res) => {
       appointmentId
     ).populate("customerId", "userName email phone");
 
+    console.log("Appointment status updated successfully");
+    console.log("Old status:", oldStatus, "-> New status:", status);
+
     res.status(200).json({
       success: true,
       message: "Appointment status updated successfully",
       data: updatedAppointment,
     });
   } catch (error) {
-    console.log(error);
+    console.log("Error updating appointment status:", error);
     res.status(500).json({
       success: false,
       message: "Error updating appointment status",

@@ -61,9 +61,28 @@ function ParlorOwnerDashboard() {
         updateAppointmentStatus({ appointmentId, status: newStatus })
       ).unwrap();
 
+      let toastMessage = "";
+      let toastDescription = "";
+
+      if (newStatus === "confirmed") {
+        toastMessage = "Appointment Confirmed!";
+        toastDescription =
+          "Customer will be notified that their slot has been successfully booked.";
+      } else if (newStatus === "cancelled") {
+        toastMessage = "Appointment Cancelled";
+        toastDescription =
+          "Customer will be notified that services are not available for this time slot.";
+      } else if (newStatus === "completed") {
+        toastMessage = "Appointment Completed";
+        toastDescription = "Appointment has been marked as completed.";
+      } else {
+        toastMessage = `Appointment ${newStatus}`;
+        toastDescription = `Appointment status updated successfully`;
+      }
+
       toast({
-        title: "Success",
-        description: `Appointment ${newStatus} successfully`,
+        title: toastMessage,
+        description: toastDescription,
       });
 
       dispatch(fetchParlorOwnerAppointments(user.id));
@@ -196,7 +215,7 @@ function ParlorOwnerDashboard() {
                 className="flex items-center gap-1"
               >
                 <XCircleIcon className="w-4 h-4" />
-                Cancel
+                Not Available
               </Button>
             </div>
           )}
@@ -218,7 +237,7 @@ function ParlorOwnerDashboard() {
                 className="flex items-center gap-1"
               >
                 <XCircleIcon className="w-4 h-4" />
-                Cancel
+                Not Available
               </Button>
             </div>
           )}
