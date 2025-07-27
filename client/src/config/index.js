@@ -16,7 +16,7 @@ export const registerFormControls = [
   {
     name: "phone",
     label: "Phone Number",
-    placeholder: "Enter your phone number",
+    placeholder: "Enter your 10-digit phone number",
     componentType: "input",
     type: "tel",
   },

@@ -47,11 +47,24 @@ function AdminProducts() {
   function onSubmit(event) {
     event.preventDefault();
 
+    // Check if image is required for new products
+    if (currentEditedId === null && !uploadedImageUrl) {
+      toast({
+        title: "Image is required",
+        description: "Please upload a product image before adding the product.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     currentEditedId !== null
       ? dispatch(
           editProduct({
             id: currentEditedId,
-            formData,
+            formData: {
+              ...formData,
+              image: uploadedImageUrl || formData.image,
+            },
           })
         )
           .then((data) => {
@@ -91,6 +104,7 @@ function AdminProducts() {
             dispatch(fetchAllProducts());
             setOpenCreateProductsDialog(false);
             setImageFile(null);
+            setUploadedImageUrl("");
             setFormData(initialFormData);
             toast({
               title: "Product add successfully",
@@ -108,13 +122,26 @@ function AdminProducts() {
   }
 
   function isFormValid() {
-    return Object.keys(formData)
+    // Check if all required form fields are filled
+    const formFieldsValid = Object.keys(formData)
       .filter(
         (currentKey) =>
-          currentKey !== "averageReview" && currentKey !== "salePrice"
+          currentKey !== "averageReview" &&
+          currentKey !== "salePrice" &&
+          currentKey !== "image"
       )
       .map((key) => formData[key] !== "")
       .every((item) => item);
+
+    // For new products (add mode), image is REQUIRED
+    // For editing existing products, image is optional (can keep existing or upload new)
+    if (currentEditedId === null) {
+      // Add mode - image is required
+      return formFieldsValid && uploadedImageUrl !== "";
+    } else {
+      // Edit mode - image is optional
+      return formFieldsValid;
+    }
   }
 
   useEffect(() => {
@@ -126,7 +153,15 @@ function AdminProducts() {
   return (
     <Fragment>
       <div className="flex justify-end w-full mb-5">
-        <Button onClick={() => setOpenCreateProductsDialog(true)}>
+        <Button
+          onClick={() => {
+            setOpenCreateProductsDialog(true);
+            setFormData(initialFormData);
+            setUploadedImageUrl("");
+            setImageFile(null);
+            setCurrentEditedId(null);
+          }}
+        >
           Add New Product
         </Button>
       </div>
@@ -138,6 +173,7 @@ function AdminProducts() {
                 setFormData={setFormData}
                 setOpenCreateProductsDialog={setOpenCreateProductsDialog}
                 setCurrentEditedId={setCurrentEditedId}
+                setUploadedImageUrl={setUploadedImageUrl}
                 product={productItem}
                 handleDelete={handleDelete}
               />
@@ -150,6 +186,8 @@ function AdminProducts() {
           setOpenCreateProductsDialog(false);
           setCurrentEditedId(null);
           setFormData(initialFormData);
+          setUploadedImageUrl("");
+          setImageFile(null);
         }}
       >
         <SheetContent side="right" className="overflow-auto">

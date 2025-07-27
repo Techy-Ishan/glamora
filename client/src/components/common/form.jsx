@@ -9,7 +9,6 @@ import {
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
-import { useState } from "react";
 
 function CommonForm({
   formControls,
@@ -18,6 +17,8 @@ function CommonForm({
   onSubmit,
   buttonText,
   isBtnDisabled,
+  errors = {},
+  onFieldChange,
 }) {
   // Helper function to get nested value
   const getNestedValue = (obj, path) => {
@@ -45,57 +46,90 @@ function CommonForm({
 
     if (control.componentType === "input") {
       return (
-        <Input
-          name={control.name}
-          placeholder={control.placeholder}
-          id={control.name}
-          type={control.type}
-          value={value}
-          onChange={(e) => {
-            const newFormData = { ...formData };
-            setNestedValue(newFormData, control.name, e.target.value);
-            setFormData(newFormData);
-          }}
-        />
+        <div>
+          <Input
+            name={control.name}
+            placeholder={control.placeholder}
+            id={control.name}
+            type={control.type}
+            value={value}
+            onChange={(e) => {
+              if (onFieldChange) {
+                onFieldChange(control.name, e.target.value);
+              } else {
+                const newFormData = { ...formData };
+                setNestedValue(newFormData, control.name, e.target.value);
+                setFormData(newFormData);
+              }
+            }}
+            className={errors[control.name] ? "border-red-500" : ""}
+          />
+          {errors[control.name] && (
+            <p className="mt-1 text-sm text-red-500">{errors[control.name]}</p>
+          )}
+        </div>
       );
     }
     if (control.componentType === "select") {
       return (
-        <Select
-          onValueChange={(val) => {
-            const newFormData = { ...formData };
-            setNestedValue(newFormData, control.name, val);
-            setFormData(newFormData);
-          }}
-          value={value}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder={control.label} />
-          </SelectTrigger>
-          <SelectContent>
-            {control.options?.length > 0 &&
-              control.options.map((option) => (
-                <SelectItem key={option.id} value={option.id}>
-                  {option.label}
-                </SelectItem>
-              ))}
-          </SelectContent>
-        </Select>
+        <div>
+          <Select
+            onValueChange={(val) => {
+              if (onFieldChange) {
+                onFieldChange(control.name, val);
+              } else {
+                const newFormData = { ...formData };
+                setNestedValue(newFormData, control.name, val);
+                setFormData(newFormData);
+              }
+            }}
+            value={value}
+          >
+            <SelectTrigger
+              className={`w-full ${
+                errors[control.name] ? "border-red-500" : ""
+              }`}
+            >
+              <SelectValue placeholder={control.label} />
+            </SelectTrigger>
+            <SelectContent>
+              {control.options?.length > 0 &&
+                control.options.map((option) => (
+                  <SelectItem key={option.id} value={option.id}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          {errors[control.name] && (
+            <p className="mt-1 text-sm text-red-500">{errors[control.name]}</p>
+          )}
+        </div>
       );
     }
     if (control.componentType === "textarea") {
       return (
-        <Textarea
-          name={control.name}
-          placeholder={control.placeholder}
-          id={control.name}
-          value={value}
-          onChange={(e) => {
-            const newFormData = { ...formData };
-            setNestedValue(newFormData, control.name, e.target.value);
-            setFormData(newFormData);
-          }}
-        />
+        <div>
+          <Textarea
+            name={control.name}
+            placeholder={control.placeholder}
+            id={control.name}
+            value={value}
+            onChange={(e) => {
+              if (onFieldChange) {
+                onFieldChange(control.name, e.target.value);
+              } else {
+                const newFormData = { ...formData };
+                setNestedValue(newFormData, control.name, e.target.value);
+                setFormData(newFormData);
+              }
+            }}
+            className={errors[control.name] ? "border-red-500" : ""}
+          />
+          {errors[control.name] && (
+            <p className="mt-1 text-sm text-red-500">{errors[control.name]}</p>
+          )}
+        </div>
       );
     }
     // default to input
@@ -118,83 +152,13 @@ function CommonForm({
     );
   };
 
-  // Validation state
-  const [errors, setErrors] = useState({});
-
-  // Basic validation: required fields and email format
-  function validate() {
-    const newErrors = {};
-    formControls.forEach((control) => {
-      const rawValue = getNestedValue(formData, control.name);
-      const value = rawValue != null ? String(rawValue) : "";
-      // Make salePrice truly optional
-      if (
-        control.componentType === "input" ||
-        control.componentType === "textarea"
-      ) {
-        // Optional fields that don't require validation
-        const optionalFields = ["salePrice"];
-        if (!optionalFields.includes(control.name) && !value.trim()) {
-          newErrors[control.name] = `${control.label} is required`;
-        } else if (control.type === "email" && value.trim()) {
-          // Simple email regex
-          const emailRegex = /^[^\s@]+@[^^\s@]+\.[^\s@]+$/;
-          if (!emailRegex.test(value)) {
-            newErrors[control.name] = "Invalid email address";
-          }
-        } else if (control.name === "userName") {
-          // Username must start with an alphabet
-          if (!/^[A-Za-z]/.test(value)) {
-            newErrors[control.name] = "User Name must start with an alphabet";
-          }
-        } else if (control.name === "password") {
-          // Password: at least 6 chars, at least one special character
-          if (value.length < 6) {
-            newErrors[control.name] =
-              "Password must be at least 6 characters long";
-          } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(value)) {
-            newErrors[control.name] =
-              "Password must include at least one special character";
-          }
-        }
-      }
-      if (
-        control.componentType === "select" &&
-        (!rawValue || rawValue === "")
-      ) {
-        newErrors[control.name] = `${control.label} is required`;
-      }
-    });
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }
-
-  function handleSubmit(e) {
-    e.preventDefault();
-    console.log("Form validation starting...");
-    const isValid = validate();
-    console.log("Form validation result:", isValid);
-    console.log("Form data:", formData);
-    if (isValid) {
-      console.log("Calling onSubmit...");
-      onSubmit(e);
-    } else {
-      console.log("Form validation failed, errors:", errors);
-    }
-  }
-
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={onSubmit}>
       <div className="flex flex-col gap-3">
         {formControls.map((controlItem) => (
           <div className="grid w-full gap-1.5" key={controlItem.name}>
             <Label className="mb-1">{controlItem.label}</Label>
             {renderInputsByComponentType(controlItem)}
-            {errors[controlItem.name] && (
-              <span className="mt-1 text-xs text-red-500">
-                {errors[controlItem.name]}
-              </span>
-            )}
           </div>
         ))}
       </div>

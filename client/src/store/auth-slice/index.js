@@ -23,6 +23,7 @@ export const registerUser = createAsyncThunk(
   }
 );
 
+
 export const loginUser = createAsyncThunk(
   "/auth/login",
 
@@ -55,6 +56,7 @@ export const logoutUser = createAsyncThunk(
     return response.data;
   }
 );
+
 
 export const checkAuth = createAsyncThunk(
   "/auth/checkauth",
